@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>swarm 情报雷达 20261012 数据图</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #0f1419; color: #e7ecf3; }
+  header { padding: 20px 28px 4px; }
+  h1 { font-size: 18px; margin: 0; }
+  .sub { color: #8b98a9; font-size: 13px; margin-top: 4px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr 1.4fr; gap: 14px; padding: 16px 28px 28px; }
+  .card { background: #161d26; border: 1px solid #232d3a; border-radius: 10px; padding: 10px; }
+  .chart { height: 300px; }
+  @media (max-width: 1100px) { .grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>swarm 情报雷达 20261012 · 数据可视化</h1>
+  <div class="sub">采集窗口 2026-10-06 ~ 2026-10-12 ｜ 条目 19（high 11 / medium 8）｜ 脚本渲染零 LLM</div>
+</header>
+<div class="grid">
+  <div class="card"><div id="src" class="chart"></div></div>
+  <div class="card"><div id="lvl" class="chart"></div></div>
+  <div class="card"><div id="trend" class="chart"></div></div>
+</div>
+<script>
+const PALETTE = ['#4ea1ff','#39d0a0','#f5a524','#f07178','#b48ead','#5c7cfa'];
+const OPT = (title) => ({ backgroundColor: 'transparent',
+  title: { text: title, left: 8, top: 4, textStyle: { color: '#8b98a9', fontSize: 13, fontWeight: 'normal' } },
+  tooltip: { trigger: 'item' },
+  textStyle: { color: '#e7ecf3' } });
+
+makeChart('src', OPT('六源条目分布'), {
+  color: PALETTE,
+  tooltip: { trigger: 'item', formatter: '{b}: {c} 条' },
+  series: [{ type: 'pie', radius: ['38%','68%'], label: { color: '#e7ecf3' },
+    data: [{"name": "arxiv", "value": 12}, {"name": "github", "value": 4}, {"name": "openai", "value": 3}] }]
+});
+makeChart('lvl', OPT('相关性分级'), {
+  color: ['#f5a524', '#4ea1ff'],
+  tooltip: { trigger: 'item', formatter: '{b}: {c} 条' },
+  series: [{ type: 'pie', radius: '62%', label: { color: '#e7ecf3', formatter: '{b}\n{c} 条' },
+    data: [{"name": "high 直接相关", "value": 11}, {"name": "medium 生态动态", "value": 8}] }]
+});
+makeChart('trend', OPT('七日条目趋势（url_index.date_seen）'), {
+  color: ['#39d0a0'],
+  tooltip: { trigger: 'axis' },
+  grid: { left: 40, right: 16, top: 40, bottom: 30 },
+  xAxis: { type: 'category', data: ["2026-10-05", "2026-10-06", "2026-10-07", "2026-10-08", "2026-10-09", "2026-10-10", "2026-10-11"], axisLabel: { color: '#8b98a9' } },
+  yAxis: { type: 'value', minInterval: 1, axisLabel: { color: '#8b98a9' } },
+  series: [{ type: 'bar', barWidth: '46%', data: [0, 0, 0, 0, 0, 0, 0],
+    itemStyle: { borderRadius: [4, 4, 0, 0] } }]
+});
+
+function makeChart(id, base, extra) {
+  echarts.init(document.getElementById(id), 'dark').setOption(Object.assign(base, extra));
+}
+</script>
+</body>
+</html>
