@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>swarm 情报雷达 · 2026.10.12 · 多智能体编排情报出版物</title>
+<style>
+:root{
+  --bg:#0a0e14; --bg2:#0d121a; --surface:#10161f; --surface2:#141c27;
+  --border:#1e2733; --border-hi:#2b3648;
+  --fg:#e8eef6; --muted:#93a1b3; --dim:#64748b;
+  --accent:#10a37f; --accent-hi:#17c098;        /* OpenAI 绿 */
+  --arxiv:#f0756a;                               /* arXiv 红 提亮 */
+  --p0:#ff5f56; --p1:#f5a524; --p2:#4c9aff;
+  --src-github:#8b98a9; --src-openai:#10a37f; --src-arxiv:#f0756a;
+  --src-anthropic:#d97757; --src-hf:#ff9d2e; --src-ph:#da552f;
+  --mono:"JetBrains Mono","SFMono-Regular",ui-monospace,Menlo,monospace;
+  --sans:"MiSans","PingFang SC","HarmonyOS Sans SC","Source Han Sans SC","Noto Sans SC",system-ui,sans-serif;
+  --ease:cubic-bezier(0.23,1,0.32,1);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.75;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:radial-gradient(900px 600px at 10% -6%,rgba(16,163,127,.15),transparent 62%),
+             radial-gradient(900px 620px at 90% -10%,rgba(240,117,106,.12),transparent 62%),var(--bg)}
+body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E")}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+/* nav */
+#progress{position:fixed;top:0;left:0;height:2px;background:var(--accent);z-index:60;width:0}
+.topnav{position:sticky;top:0;z-index:50;background:rgba(10,14,20,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+.topnav-inner{max-width:1440px;margin:0 auto;padding:0 28px;display:flex;align-items:center;gap:6px;height:52px;overflow-x:auto}
+.topnav .brand{font-weight:600;font-size:14px;white-space:nowrap;margin-right:14px}
+.topnav .brand b{color:var(--accent)}
+.navlink{color:var(--muted);font-size:12.5px;padding:5px 10px;border-radius:999px;white-space:nowrap;transition:color .15s var(--ease),background .15s var(--ease)}
+.navlink:hover{color:var(--fg);background:var(--surface2);text-decoration:none}
+.navlink.active{color:var(--fg);background:var(--surface2);box-shadow:inset 0 -2px 0 var(--accent)}
+/* layout */
+main{max-width:1440px;margin:0 auto;padding:0 28px 96px}
+section.pubsec{padding-top:72px;scroll-margin-top:64px}
+.sechead{display:flex;align-items:baseline;gap:14px;margin-bottom:22px;border-bottom:1px solid var(--border);padding-bottom:14px;flex-wrap:wrap}
+.sechead .no{font-family:var(--mono);font-size:13px;color:var(--accent);letter-spacing:.08em}
+.sechead h2{font-size:26px;font-weight:600;line-height:1.3}
+.sechead .sub{color:var(--dim);font-size:12.5px;margin-left:auto;text-align:right}
+/* cover */
+.cover{position:relative;padding:80px 0 36px}
+.radar-rings{position:absolute;right:-180px;top:-80px;width:660px;height:660px;z-index:0;opacity:.55;pointer-events:none}
+.radar-sweep{transform-origin:330px 330px;animation:sweep 9s linear infinite}
+@keyframes sweep{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.radar-sweep{animation:none}}
+.cover-kicker{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--accent);text-transform:uppercase}
+.cover h1{font-size:clamp(38px,5.4vw,66px);line-height:1.16;font-weight:700;letter-spacing:-.01em;margin:14px 0 8px;position:relative;z-index:1}
+.cover h1 .date{color:var(--muted);font-weight:500}
+.cover-meta{color:var(--muted);font-size:13.5px;max-width:760px;position:relative;z-index:1}
+.srcstat{display:inline-flex;align-items:center;gap:6px;margin:6px 10px 0 0;font-size:12px;color:var(--muted);font-family:var(--mono)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot.ok{background:var(--accent)}.dot.bad{background:var(--p0)}
+.bigstats{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:14px;margin:34px 0 28px;position:relative;z-index:1}
+.bigstat{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+.bigstat .v{font-family:var(--mono);font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.bigstat .k{color:var(--muted);font-size:12.5px;margin-top:4px}
+.bigstat.hi .v{color:var(--accent)}
+.bigstat.p1c .v{color:var(--p1)}
+/* cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px 22px;
+  transition:transform .18s var(--ease),border-color .18s var(--ease),box-shadow .18s var(--ease)}
+a.card:hover,.card.hoverable:hover{transform:translateY(-3px);border-color:var(--border-hi);box-shadow:0 12px 28px rgba(0,0,0,.35);text-decoration:none}
+.grid-5{display:grid;grid-template-columns:repeat(5,1fr);gap:14px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.focuscard{display:block;color:inherit}
+.focuscard .fc-top{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.focuscard h3{font-size:15px;font-weight:600;line-height:1.5;margin-bottom:8px}
+.focuscard p{color:var(--muted);font-size:12.5px;line-height:1.7}
+/* badges */
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11px;letter-spacing:.04em;padding:2px 9px;border-radius:999px;border:1px solid}
+.badge.github{color:var(--src-github);border-color:rgba(139,152,169,.5);background:rgba(139,152,169,.08)}
+.badge.arxiv{color:var(--src-arxiv);border-color:rgba(240,117,106,.5);background:rgba(240,117,106,.08)}
+.badge.openai{color:var(--src-openai);border-color:rgba(16,163,127,.5);background:rgba(16,163,127,.08)}
+.badge.p0{color:var(--p0);border-color:rgba(255,95,86,.55);background:rgba(255,95,86,.09)}
+.badge.p1{color:var(--p1);border-color:rgba(245,165,36,.5);background:rgba(245,165,36,.08)}
+.badge.p2{color:var(--p2);border-color:rgba(76,154,255,.5);background:rgba(76,154,255,.08)}
+.badge.high{color:var(--fg);border-color:var(--border-hi);background:var(--surface2)}
+/* 01 */
+.lede{font-size:16.5px;line-height:1.85;max-width:76ch;margin-bottom:20px}
+.lede b{color:var(--accent);font-weight:600}
+.sumcard .v{font-family:var(--mono);font-size:28px;font-weight:700;letter-spacing:-.02em}
+.sumcard h3{font-size:14px;font-weight:600;margin-bottom:4px}
+.sumcard p{color:var(--muted);font-size:12.5px;margin-top:4px}
+/* 02 */
+.prodcard .icon{width:34px;height:34px;border-radius:9px;background:var(--surface2);border:1px solid var(--border);display:grid;place-items:center;margin-bottom:12px;color:var(--accent)}
+.prodcard h3{font-size:15px;font-weight:600;margin-bottom:6px}
+.prodcard p{color:var(--muted);font-size:13px}
+/* charts */
+.chartbox{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px 18px 8px}
+.chartbox .ct{font-size:13.5px;font-weight:600}
+.chartbox .cs{font-size:11.5px;color:var(--dim);margin:2px 0 8px}
+.chart{width:100%}
+/* 04 table */
+.cltable-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px;background:var(--surface)}
+table.cltable{width:100%;border-collapse:collapse;font-size:13px;min-width:960px}
+.cltable th{text-align:left;color:var(--dim);font-weight:500;font-size:11.5px;letter-spacing:.04em;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+.cltable td{padding:10px 14px;border-bottom:1px solid rgba(30,39,51,.6);vertical-align:top;color:var(--muted);line-height:1.65}
+.cltable td.t{color:var(--fg);font-weight:500}
+.cltable td .pt{font-family:var(--mono);font-size:11.5px;color:var(--dim);display:block}
+.cltable tr:last-child td{border-bottom:0}
+.cltable tbody tr{transition:background .15s var(--ease)}
+.cltable tbody tr:hover{background:var(--surface2)}
+/* net graph */
+.netwrap{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;overflow-x:auto}
+.netnode rect{transition:filter .15s var(--ease)}
+.netnode:hover rect{filter:brightness(1.4)}
+.netedge{transition:stroke-opacity .15s var(--ease)}
+.net-dim .netedge{stroke-opacity:.08}
+.net-dim .netedge.hot{stroke-opacity:.85}
+/* archive */
+.arch{margin-bottom:18px}
+.arch-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.arch-idx{font-family:var(--mono);font-size:12px;color:var(--dim);letter-spacing:.06em}
+.arch-title{font-size:19px;font-weight:600;line-height:1.5;color:var(--fg);display:block;margin:6px 0 10px}
+a.arch-title:hover{color:var(--accent);text-decoration:none}
+.metabar{display:flex;flex-wrap:wrap;gap:6px 8px;margin-bottom:12px}
+.chip{font-family:var(--mono);font-size:11px;color:var(--muted);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:2px 8px}
+.chip.star{color:var(--p1)}
+.wh{margin-bottom:10px;font-size:14px;line-height:1.8}
+.wh .lbl{font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.02em;margin-right:8px;white-space:nowrap}
+.wh.how .lbl{color:var(--arxiv)}
+.wh.sum .lbl{color:var(--dim)}
+.advice{border-left:3px solid var(--p2);background:var(--surface2);border-radius:0 10px 10px 0;padding:12px 16px;margin-top:12px}
+.advice.p-P1{border-left-color:var(--p1)}
+.advice.p-P2{border-left-color:var(--p2)}
+.advice.p-none{border-left-color:var(--border-hi)}
+.advice-head{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.advice-seg{font-size:13.5px;line-height:1.8;color:var(--muted)}
+.advice-seg b{color:var(--fg);font-weight:600}
+.advice-seg+.advice-seg{margin-top:6px}
+.linkgroup{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.linkgroup a{font-family:var(--mono);font-size:11.5px;padding:4px 10px;border:1px solid var(--border);border-radius:8px;color:var(--muted);transition:all .15s var(--ease)}
+.linkgroup a:hover{color:var(--fg);border-color:var(--border-hi);background:var(--surface2);text-decoration:none}
+/* medium list */
+.medlist{display:grid;gap:10px}
+.medrow{display:grid;grid-template-columns:120px 1fr auto;gap:12px;align-items:start}
+.medrow .mt{font-size:14px;font-weight:500;line-height:1.6}
+.medrow .mdesc{color:var(--muted);font-size:12.5px;margin-top:2px}
+/* rings */
+.ringwrap{display:grid;grid-template-columns:420px 1fr;gap:22px;align-items:start}
+.ringlegend{display:grid;gap:14px}
+.ringlegend h4{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+.ringlegend h4 .rc{font-family:var(--mono);font-size:11px;color:var(--dim)}
+.ringlegend ul{list-style:none;margin-top:6px;display:grid;gap:4px}
+.ringlegend li{font-size:12.5px;color:var(--muted);padding-left:14px;position:relative}
+.ringlegend li::before{content:"";position:absolute;left:0;top:9px;width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.7}
+.ringlegend .r1 li{color:var(--accent)}.ringlegend .r1 li b,.ringlegend .r2 li b,.ringlegend .r3 li b{color:var(--fg);font-weight:500}
+.ringlegend .r1 li{color:var(--muted)}.ringlegend .r1 h4 .sw{background:var(--accent)}
+.ringlegend .r2 h4 .sw{background:var(--p1)}
+.ringlegend .r3 h4 .sw{background:var(--src-github)}
+.ringlegend .sw{width:10px;height:10px;border-radius:3px;display:inline-block}
+/* top1 / action */
+.top1{background:linear-gradient(135deg,rgba(16,163,127,.16),rgba(16,163,127,.04) 55%),var(--surface);border:1px solid rgba(16,163,127,.45);border-radius:18px;padding:28px 32px}
+.top1 .t1k{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--accent)}
+.top1 h3{font-size:24px;font-weight:700;line-height:1.45;margin:8px 0 10px}
+.top1 .why{color:var(--muted);font-size:14px;max-width:72ch}
+.t1steps{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.t1step{background:rgba(10,14,20,.55);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.t1step .sn{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em}
+.t1step p{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.7}
+.t1step p code{font-family:var(--mono);font-size:11.5px;color:var(--fg)}
+.risk{border-left:3px solid var(--p0);background:var(--surface2);border-radius:0 10px 10px 0;padding:12px 16px;font-size:13.5px;color:var(--muted);line-height:1.8}
+.risk b{color:var(--fg)}
+footer{border-top:1px solid var(--border);margin-top:80px;padding-top:28px;color:var(--dim);font-size:12px;line-height:1.9}
+footer code{font-family:var(--mono);font-size:11px;color:var(--muted)}
+/* responsive */
+@media (max-width:1180px){
+  .grid-5{grid-template-columns:repeat(2,1fr)}
+  .grid-4{grid-template-columns:repeat(2,1fr)}
+  .grid-3{grid-template-columns:repeat(2,1fr)}
+  .bigstats{grid-template-columns:repeat(2,1fr)}
+  .ringwrap{grid-template-columns:1fr}
+  .t1steps{grid-template-columns:1fr}
+}
+@media (max-width:720px){
+  .grid-5,.grid-4,.grid-3,.grid-2{grid-template-columns:1fr}
+  .medrow{grid-template-columns:1fr}
+  main{padding:0 16px 72px}
+  .topnav-inner{padding:0 16px}
+}
+/* print */
+@media print{
+  body{background:#fff;color:#1a1a1a}
+  body::before,body::after,#progress,.topnav,.radar-rings{display:none!important}
+  .card,.chartbox,.bigstat,.netwrap,.cltable-wrap,.top1,.t1step,.advice,.risk{background:#fff;border-color:#ccc;color:#1a1a1a}
+  .top1{background:#f2faf7}
+  .lede b,.sechead .no,.bigstat.hi .v{color:#0b7a5f}
+  .muted,p,.chip,.advice-seg{color:#444!important}
+  section.pubsec{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+<nav class="topnav" aria-label="章节导航"><div class="topnav-inner">
+  <span class="brand">swarm <b>情报雷达</b></span>
+  <a class="navlink" href="#sec-cover">封面</a>
+  <a class="navlink" href="#sec-brief">01 概要</a>
+  <a class="navlink" href="#sec-product">02 本刊</a>
+  <a class="navlink" href="#sec-focus">03 焦点</a>
+  <a class="navlink" href="#sec-eco">04 建议生态</a>
+  <a class="navlink" href="#sec-data">05 数据</a>
+  <a class="navlink" href="#sec-archive">06 条目档案</a>
+  <a class="navlink" href="#sec-impact">07 影响圈</a>
+  <a class="navlink" href="#sec-action">08 读者行动</a>
+</div></nav>
+<main>
+
+<!-- ============ 00 COVER ============ -->
+<section class="pubsec cover" id="sec-cover" data-od-id="cover" data-screen-label="00 封面">
+  <svg class="radar-rings" viewBox="0 0 660 660" aria-hidden="true">
+    <defs><linearGradient id="sweepGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#10a37f" stop-opacity="0"/><stop offset="100%" stop-color="#10a37f" stop-opacity=".35"/>
+    </linearGradient></defs>
+    <g fill="none" stroke="#1e2733" stroke-width="1">
+      <circle cx="330" cy="330" r="90"/><circle cx="330" cy="330" r="160"/>
+      <circle cx="330" cy="330" r="232"/><circle cx="330" cy="330" r="304"/>
+    </g>
+    <g stroke="#1e2733" stroke-width="1" opacity=".6">
+      <line x1="330" y1="26" x2="330" y2="634"/><line x1="26" y1="330" x2="634" y2="330"/>
+    </g>
+    <g class="radar-sweep"><path d="M330 330 L330 26 A304 304 0 0 1 545 115 Z" fill="url(#sweepGrad)"/></g>
+    <circle cx="418" cy="222" r="4" fill="#f0756a"/><circle cx="252" cy="410" r="3.4" fill="#10a37f"/>
+    <circle cx="452" cy="430" r="3" fill="#f5a524"/><circle cx="212" cy="238" r="2.6" fill="#8b98a9"/>
+  </svg>
+  <div class="cover-kicker">SWARM INTELLIGENCE RADAR · ISSUE 2026-10-12</div>
+  <h1>swarm 情报雷达<br><span class="date">2026.10.12</span> · 多智能体编排情报出版物</h1>
+  <p class="cover-meta">
+    六源采集窗口 <span class="num">2026-10-06 → 2026-10-12</span> · 本地索引口径 <span class="num">date_seen 2026-10-12</span> · 由 AgentSwarm radar 管线产出并经分级、富化、建议提炼三道工序。
+    <br>
+    <span class="srcstat"><span class="dot ok"></span>openai 4 条</span>
+    <span class="srcstat"><span class="dot ok"></span>github 12 条</span>
+    <span class="srcstat"><span class="dot ok"></span>arxiv 15 条</span>
+    <span class="srcstat"><span class="dot bad"></span>anthropic 采集失败</span>
+    <span class="srcstat"><span class="dot bad"></span>huggingface 采集失败</span>
+    <span class="srcstat"><span class="dot bad"></span>producthunt 采集失败</span>
+  </p>
+  <div class="bigstats" data-od-id="cover-stats">
+    <div class="bigstat"><div class="v num">31</div><div class="k">条目入池（六源原始）</div></div>
+    <div class="bigstat hi"><div class="v num">19</div><div class="k">精选保留（high 11 + medium 8）</div></div>
+    <div class="bigstat"><div class="v num">16</div><div class="k">可落地建议（P1 ×7 · P2 ×9）</div></div>
+    <div class="bigstat p1c"><div class="v num">19</div><div class="k">跨日持续信号（10-11/10-12 两日重叠）</div></div>
+  </div>
+  <div class="grid-5" id="cover-focus" data-od-id="cover-focus-cards"><!-- JS 填充 5 张焦点卡 --></div>
+</section>
+
+<!-- ============ 01 概要 ============ -->
+<section class="pubsec" id="sec-brief" data-od-id="sec-brief" data-screen-label="01 概要">
+  <div class="sechead"><span class="no">01</span><h2>本期概要</h2><span class="sub">31 入池 → 19 保留 → 16 条建议 · 丢弃 12 条（单 agent / 领域无关 / 低信号）</span></div>
+  <p class="lede">
+    本期雷达的核心叙事是<b>「从单体智能走向群体工程」</b>：开源侧，<b>agent-native（7,130★）</b>用一份 action 定义同时供给 agent 工具与 UI 调用，
+    <b>KohakuTerrarium（520★）</b>把多 agent 团队做成可安装的 creature pack；论文侧，<b>EMFA</b> 与 <b>Constitutional Gating</b> 分别给出失败归因与死锁恢复的可工程化路径，
+    <b>Ecology</b> 首次把「群体规模」本身确立为安全变量；产业侧，<b>LegalOn 与 Asana</b> 用任务级模型分工把 agent 成本打下 65–76 倍。
+    对照 AgentSwarm 本仓：16 条建议里 <b>7 条 P1</b> 全部落在路由、循环监控、失败归因、评审链路四个已注册机制面上，且都要求以「治理四件套 + 观察期」交付。
+  </p>
+  <div class="grid-4">
+    <div class="card sumcard hoverable" data-od-id="brief-card-p1"><h3>P1 建议</h3><div class="v num" style="color:var(--p1)">7</div><p>路由分层 / 无进展循环 / 群体规模探针 / 失败传播标记 / 非作者二评 / 动作级约束闸 / A2A 立项调研</p></div>
+    <div class="card sumcard hoverable" data-od-id="brief-card-p2"><h3>P2 建议</h3><div class="v num" style="color:var(--p2)">9</div><p>团队模板 / 协作者画像 / evidence 字段 / 恶意 swarm 检查项 / 嵌套链 schema / horizon 分桶 等</p></div>
+    <div class="card sumcard hoverable" data-od-id="brief-card-sources"><h3>源健康度</h3><div class="v num">3<span style="font-size:18px;color:var(--dim)"> / 6</span></div><p>openai / github / arxiv 正常；anthropic（sitemap+兜底无结果）、huggingface 与 producthunt（SSL EOF）失败</p></div>
+    <div class="card sumcard hoverable" data-od-id="brief-card-overlap"><h3>持续信号</h3><div class="v num" style="color:var(--accent)">19</div><p>10-11 轮 55 条、10-12 轮 31 条，URL 重叠 19 条——arXiv 批次持续在场，GitHub 每日换血</p></div>
+  </div>
+</section>
+
+<!-- ============ 02 产品 ============ -->
+<section class="pubsec" id="sec-product" data-od-id="sec-product" data-screen-label="02 本刊定位">
+  <div class="sechead"><span class="no">02</span><h2>本刊定位</h2><span class="sub">六张卡片说清这份出版物是什么、给谁看、怎么运转</span></div>
+  <div class="grid-3">
+    <div class="card prodcard hoverable" data-od-id="prod-positioning">
+      <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div>
+      <h3>本刊定位</h3>
+      <p>面向多智能体编排（swarm / agentic workflow）的每日情报出版物。只收录「直接是编排的产品/论文/框架/重大发布」与「agent 生态重要动态」两档，其余丢弃不占版面。</p>
+    </div>
+    <div class="card prodcard hoverable" data-od-id="prod-coverage">
+      <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h10"/></svg></div>
+      <h3>覆盖范围</h3>
+      <p>六源：OpenAI 官方博客、Anthropic、HuggingFace、GitHub（API 实查星数核验）、arXiv、Product Hunt。本期 3 源在线共产出 31 条原始条目，7 日滚动窗口。</p>
+    </div>
+    <div class="card prodcard hoverable" data-od-id="prod-cadence">
+      <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></div>
+      <h3>发布节奏</h3>
+      <p>每日一轮：采集 → 分级（high / medium）→ 富化（stars / license / abstract / README 首段）→ 建议提炼。URL 索引按 <span class="num">date_seen</span> 本地口径七日去重，持续信号跨日累计。</p>
+    </div>
+    <div class="card prodcard hoverable" data-od-id="prod-audience">
+      <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><circle cx="17.5" cy="9" r="2.5"/><path d="M16 14.5c3 .4 5.5 2.5 5.5 5.5"/></svg></div>
+      <h3>读者画像</h3>
+      <p>AgentSwarm 核心维护者与提案作者。每条建议都对照本仓 <span class="num">AGENTS.md</span> / <span class="num">features.yaml</span> 注册表落点，读完可直接转 AS-PROP 提案。</p>
+    </div>
+    <div class="card prodcard hoverable" data-od-id="prod-value">
+      <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z"/></svg></div>
+      <h3>价值主张</h3>
+      <p>不做新闻转发。每条条目回答三个问题：外部做法是什么、与本仓机制的差距在哪、下一步建议以什么优先级落到哪个文件。差距必须带行号锚点。</p>
+    </div>
+    <div class="card prodcard hoverable" data-od-id="prod-intake">
+      <div class="icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 17v3h16v-3"/></svg></div>
+      <h3>接入方式</h3>
+      <p>数据面：<span class="num">classified.json</span>（19 条精选）· <span class="num">enrich.json</span>（31 条元数据+素材）· <span class="num">candidates.json</span>（原始池+源状态）· <span class="num">url_index.jsonl</span>（跨日索引）。管线产物即本刊数据源。</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 03 焦点 ============ -->
+<section class="pubsec" id="sec-focus" data-od-id="sec-focus" data-screen-label="03 焦点">
+  <div class="sechead"><span class="no">03</span><h2>五大焦点</h2><span class="sub">从 19 条保留条目中按信号强度与本仓相关度选出 · 序号 H01–H05 对应 06 档案卡</span></div>
+  <div class="grid-5" id="focus-cards" data-od-id="focus-cards"><!-- JS 填充 --></div>
+  <div class="chartbox" style="margin-top:18px" data-od-id="chart-trend-03">
+    <div class="ct">七日窗口条目分布（按发布日）</div>
+    <div class="cs">口径：31 条入池条目的 published 日期落在 10-06 → 10-12 窗口内；date_seen 均为 2026-10-12（本地索引首日，index_size_before=0）</div>
+    <div class="chart" id="chart-trend" style="height:260px"></div>
+  </div>
+</section>
+
+<!-- ============ 04 建议生态 ============ -->
+<section class="pubsec" id="sec-eco" data-od-id="sec-eco" data-screen-label="04 建议生态">
+  <div class="sechead"><span class="no">04</span><h2>建议生态</h2><span class="sub">16 条建议 · 影响×成本矩阵 / 依赖排期 / 落点关联网 / 落地清单</span></div>
+  <div class="grid-2">
+    <div class="chartbox" data-od-id="chart-matrix">
+      <div class="ct">优先级矩阵 · 影响 × 实施成本</div>
+      <div class="cs">气泡=建议条目，颜色=P 级；hover 查看建议摘要与落点。成本/影响为编辑部基于 advice 落点广度的定性评级（1–5）</div>
+      <div class="chart" id="chart-scatter" style="height:380px"></div>
+    </div>
+    <div class="chartbox" data-od-id="chart-gantt">
+      <div class="ct">落地路线 · 按依赖排序（P1 七条）</div>
+      <div class="cs">mermaid gantt · 依赖关系：传播标记依赖循环判据先行、第二评审依赖 tier 映射先行、动作约束闸依赖探针口径</div>
+      <div id="chart-gantt-m" style="height:380px"></div>
+    </div>
+  </div>
+  <div class="netwrap" style="margin-top:18px" data-od-id="net-map">
+    <div class="ct" style="font-size:13.5px;font-weight:600;margin-bottom:2px">建议关联网 · 来源 → 落点模块</div>
+    <div class="cs" style="font-size:11.5px;color:var(--dim);margin-bottom:8px">左侧=情报来源（品牌色），右侧=本仓落点模块；连线颜色=P 级。落点均取自 advice 中的文件/机制锚点</div>
+    <svg id="net-svg" viewBox="0 0 1360 640" style="width:100%;min-width:1080px;height:auto" role="img" aria-label="建议关联网"><!-- JS 填充 --></svg>
+  </div>
+  <div class="cltable-wrap" style="margin-top:18px" data-od-id="landing-table">
+    <table class="cltable">
+      <thead><tr><th style="width:56px">优先级</th><th>建议摘要</th><th style="width:300px">落点</th><th style="width:88px">估时</th><th style="width:300px">风险 / 前置</th></tr></thead>
+      <tbody id="cltable-body"><!-- JS 填充 16 行 --></tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============ 05 数据 ============ -->
+<section class="pubsec" id="sec-data" data-od-id="sec-data" data-screen-label="05 数据">
+  <div class="sechead"><span class="no">05</span><h2>数据面板</h2><span class="sub">六图均出自 candidates / classified / enrich / 两日 runs 对照 · 无估算填充</span></div>
+  <div class="grid-3">
+    <div class="chartbox" data-od-id="chart-sources">
+      <div class="ct">来源分布（31 条入池）</div>
+      <div class="cs">arxiv 15 · github 12 · openai 4；三源失败见 01 概要</div>
+      <div class="chart" id="chart-donut-src" style="height:280px"></div>
+    </div>
+    <div class="chartbox" data-od-id="chart-grades">
+      <div class="ct">分级占比（31 → 19）</div>
+      <div class="cs">high 11 / medium 8 / 丢弃 12（单 agent、领域无关、低信号）</div>
+      <div class="chart" id="chart-donut-grade" style="height:280px"></div>
+    </div>
+    <div class="chartbox" data-od-id="chart-trend-05">
+      <div class="ct">七日趋势（发布日口径）</div>
+      <div class="cs">与 03 同源；10-08 为 arXiv 批次日、10-11 为 GitHub 批次日</div>
+      <div class="chart" id="chart-trend5" style="height:280px"></div>
+    </div>
+    <div class="chartbox" data-od-id="chart-heatmap">
+      <div class="ct">来源活跃度热力图（发布日 × 源）</div>
+      <div class="cs">7 天 × 6 源；anthropic / huggingface / producthunt 全零（采集失败）</div>
+      <div class="chart" id="chart-heat" style="height:300px"></div>
+    </div>
+    <div class="chartbox" data-od-id="chart-slope">
+      <div class="ct">两轮采集信号对比（10-11 轮 → 10-12 轮）</div>
+      <div class="cs">10-11 轮 55 条六源全开 → 10-12 轮 31 条三源在线；URL 重叠 19 条为持续信号</div>
+      <div class="chart" id="chart-slope" style="height:300px"></div>
+    </div>
+    <div class="chartbox" data-od-id="chart-prio">
+      <div class="ct">建议优先级分布</div>
+      <div class="cs">P1 ×7（琥珀）/ P2 ×9（蓝）· 按落点模块聚类</div>
+      <div class="chart" id="chart-prio" style="height:300px"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 06 条目档案 ============ -->
+<section class="pubsec" id="sec-archive" data-od-id="sec-archive" data-screen-label="06 条目档案">
+  <div class="sechead"><span class="no">06</span><h2>条目档案卡</h2><span class="sub">high ×11 全档案（元数据 + what/how + 四段式 advice + 链接组）· medium ×8 紧凑列表</span></div>
+  <div id="archive-high" data-od-id="archive-high"><!-- JS 填充 11 张 --></div>
+  <div class="sechead" style="margin-top:40px"><span class="no">06·M</span><h2>medium 条目</h2><span class="sub">agent 生态重要动态 · 紧凑归档</span></div>
+  <div class="medlist" id="archive-medium" data-od-id="archive-medium"><!-- JS 填充 8 行 --></div>
+</section>
+
+<!-- ============ 07 影响圈 ============ -->
+<section class="pubsec" id="sec-impact" data-od-id="sec-impact" data-screen-label="07 影响圈">
+  <div class="sechead"><span class="no">07</span><h2>影响圈与风险回滚</h2><span class="sub">三层影响：内圈=本仓修改 · 中圈=相关提案/注册表 · 外圈=社区与论文反馈</span></div>
+  <div class="ringwrap">
+    <svg id="ring-svg" viewBox="0 0 420 420" style="width:100%;max-width:420px;height:auto" role="img" aria-label="三层影响圈"><!-- JS 填充 --></svg>
+    <div class="ringlegend">
+      <div class="r1"><h4><span class="sw"></span>内圈 · 本仓修改 <span class="rc">7 处落点</span></h4>
+        <ul>
+          <li><b>modelswarm.py::_resolve_route</b> — task_type→model tier 映射（LegalOn P1）</li>
+          <li><b>loop_session.py + loop_metrics</b> — 无进展循环判据（Constitutional Gating P1）</li>
+          <li><b>失败事件结构</b> — 传播标记字段 + dlq_retry 分级（EMFA P1）</li>
+          <li><b>monitoring 四件套</b> — 群体规模探针 gauge（Ecology P1）</li>
+          <li><b>proposals review 链路</b> — 非作者第二评审路径（MASS P1）</li>
+          <li><b>work_once.py 工具入口</b> — 动作级约束闸（E-Ledger P1）</li>
+          <li><b>chains.yaml schema</b> — 嵌套链引用评估（Solo-to-Ensemble P2）</li>
+        </ul>
+      </div>
+      <div class="r2"><h4><span class="sw"></span>中圈 · 注册表与提案 <span class="rc">features.yaml / AS-PROP</span></h4>
+        <ul>
+          <li><b>gate_policy_injection(:733)</b> — evidence 字段、恶意 swarm 检查项、动作闸均走分级注入</li>
+          <li><b>eval_history(:2482)</b> — horizon 分桶、cost/speed 基线回写；四维路由保持终选权威</li>
+          <li><b>loop2green(:208)</b> — L1-L3 之外增补无进展判据，不替换既有硬出口</li>
+          <li><b>AS-PROP 调研选型</b> — A2A/多面暴露立项、协作者画像、团队模板先走技能排除论证</li>
+        </ul>
+      </div>
+      <div class="r3"><h4><span class="sw"></span>外圈 · 社区与论文反馈 <span class="rc">19 条持续信号</span></h4>
+        <ul>
+          <li><b>agent-native (7,130★)</b> — MIT 可直接参考实现，导入前走三查强制</li>
+          <li><b>KohakuTerrarium (520★)</b> — 团队模板形态参考；license 需法务确认</li>
+          <li><b>arXiv 批次 12 篇</b> — 论文证据满足 _check_arxiv_evidence 留痕要求</li>
+          <li><b>OpenAI 案例 3 篇</b> — 76×/65% 降本数字来自官方博客原文，非本刊估算</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-top:22px">
+    <div class="risk" data-od-id="risk-source"><b>源健康风险：</b>anthropic（sitemap 与 SearXNG 兜底均无结果）、huggingface 与 producthunt（SSL EOF）连续失败。本期分级结论仅基于三源；若 anthropic 恢复，high 池可能扩容，建议在下一刊回看本刊 P2 队列是否需要升格。</div>
+    <div class="risk" data-od-id="risk-delivery"><b>交付纪律：</b>所有 gate 类改动（evidence 字段、动作约束闸、恶意 swarm 检查项）必须先 warning 观察期再转阻断（gate_fail_closed :757）；所有探针按治理四件套交付（check 可 import + scheduler 注册 + collector gauge + EventBus 告警），缺一不算完成。</div>
+  </div>
+</section>
+
+<!-- ============ 08 读者行动 ============ -->
+<section class="pubsec" id="sec-action" data-od-id="sec-action" data-screen-label="08 读者行动">
+  <div class="sechead"><span class="no">08</span><h2>本期你的 1 件事</h2><span class="sub">从 16 条建议中按 影响 × 逆成本 × 跨期权重 选出的 Top 1</span></div>
+  <div class="top1" data-od-id="top1">
+    <div class="t1k">TOP 1 · P1 · 来源 LegalOn × Codex（openai.com 2026-10-08）</div>
+    <h3>在 modelswarm 路由里加 task_type → model tier 映射，与 per-task token 预算联动</h3>
+    <p class="why">LegalOn 用 Astra / Sol / Luna 按任务分工 + 预算档位管理，把日 Codex 成本降 65% 而开发速度不降；Asana 同型做法降本 76×、提速 5×。本仓 <span class="num">llm_model_routing_model_driven(:1012)</span> 的 canonical <span class="num">_resolve_route</span> 目前按 provider/key 健康解析路由，缺显式 task→model 分层——这是 16 条建议里唯一「影响面覆盖每一次 LLM 调用、而改动集中在一个函数」的条目，故列本周首位。</p>
+    <div class="t1steps">
+      <div class="t1step"><div class="sn">STEP 1 · 2d</div><p>在 <code>swarm/llm/providers/modelswarm.py::_resolve_route</code> 增加 task_type→tier 映射（cheap/fast vs heavy），任务类型由调用方显式声明，缺省回落现行为。</p></div>
+      <div class="t1step"><div class="sn">STEP 2 · 1d</div><p>与 O3 per-task token budget（<code>:2798</code> 五处透传）联动：tier 决定预算档位，超档熔断而非静默升级。</p></div>
+      <div class="t1step"><div class="sn">STEP 3 · 观察</div><p>配置变更纳入 <code>key_pool_health(:2024)</code> 30min 对账；先 warning 观察一周再考虑把「未声明 tier」升级为 gate。</p></div>
+    </div>
+  </div>
+  <div class="grid-3" style="margin-top:22px">
+    <div class="card" data-od-id="action-sub"><h3 style="font-size:15px;font-weight:600;margin-bottom:8px">订阅本期与后续</h3><p style="color:var(--muted);font-size:13px">radar 管线每日产出 <span class="num" style="font-size:12px">tmp/radar/YYYYMMDD/{candidates,classified}.json</span> 与 <span class="num" style="font-size:12px">enrich.json</span>；本出版物模板绑定同目录数据即可滚动更新。url_index 按 <span class="num" style="font-size:12px">date_seen</span> 七日去重累计。</p></div>
+    <div class="card" data-od-id="action-feedback"><h3 style="font-size:15px;font-weight:600;margin-bottom:8px">反馈通道</h3><p style="color:var(--muted);font-size:13px">对任一条建议有异议或补充落点，直接在 AgentSwarm 仓库提 AS-PROP 提案并在正文引用雷达条目 URL（<span class="num" style="font-size:12px">arxiv 链接满足 _check_arxiv_evidence 留痕</span>）；分级口径问题回帖到本期 notes。</p></div>
+    <div class="card" data-od-id="action-next"><h3 style="font-size:15px;font-weight:600;margin-bottom:8px">下一刊看点</h3><p style="color:var(--muted);font-size:13px">① anthropic / huggingface 采集恢复后 high 池是否扩容；② agent-native A2A 通道立项调研结论；③ Top 1 tier 映射落地后的首周 cost/speed 基线回写 eval_history。</p></div>
+  </div>
+  <footer data-od-id="footer">
+    <b style="color:var(--muted)">数据来源与口径</b> ·
+    <code>candidates.json</code>（31 条原始 + 六源状态 + 7 日窗口）·
+    <code>classified.json</code>（high 11 + medium 8，含四段式 advice）·
+    <code>enrich.json</code>（stars / license / lang / topics / categories / README 首段 / abstract）·
+    <code>url_index.jsonl</code>（date_seen 本地口径）· 两日 runs 对照（10-11 轮 55 条 / 10-12 轮 31 条 / 重叠 19）。
+    <br>星数与元数据来自 GitHub API 实查（enrich 时点 2026-10-12T18:21Z）；降本数字 76× / 65% 来自 openai.com 官方博客原文；本刊不产生估算数据，矩阵图中的影响/成本评级为编辑部定性判断并已在图注标明。
+    <br>swarm 情报雷达 · 2026.10.12 · AgentSwarm radar v2 管线产物。
+  </footer>
+</section>
+</main>
+
+<script src="echarts.min.js"></script>
+<script src="mermaid.min.js"></script>
+<script>
+/* ================= DATA (from classified.json / enrich.json / candidates.json / url_index.jsonl) ================= */
+var SRC = {
+  github:{label:"GitHub",color:"#8b98a9",cls:"github"},
+  arxiv:{label:"arXiv",color:"#f0756a",cls:"arxiv"},
+  openai:{label:"OpenAI",color:"#10a37f",cls:"openai"}
+};
+var PC = {P0:"#ff5f56",P1:"#f5a524",P2:"#4c9aff"};
+
+/* --- 11 high 全档案 --- */
+var HIGH = [
+{id:"h01-agent-native",idx:"H01",src:"github",title:"BuilderIO/agent-native",url:"https://github.com/BuilderIO/agent-native",date:"2026-10-11",p:"P1",
+ chips:["⭐ 7,130","647 forks","TypeScript","license 未声明","push 2026-10-12","issues 81","topics: agent-native / agents / ai / react / typescript"],
+ what:"构建 agentic 应用的 TypeScript 框架：每个能力定义一次为 action，agent 当工具用、UI 从代码调；agent teams 支持同工作区与跨 agent 委派，automations 按事件/定时触发，能力面覆盖 UI / agent / HTTP / MCP / A2A / CLI 六个消费面。",
+ how:"核心增量是「一份定义、六面复用」——本仓工具面在 MCP / CLI / TUI 各写一份，11 种框架适配器也没有 A2A 通道；agent-native 把委派与自动化做成框架一等公民而非 YAML 静态声明。MIT 许可，可直接参考实现。",
+ summary:"A framework for building agentic apps（GitHub API 实查 7,119★ 入池、enrich 时点 7,130★）。",
+ advice:{practice:"单一 action 定义同时供给 UI/agent/HTTP/MCP/A2A/CLI 六个面，agent teams 支持同工作区与跨 agent 委派，automations 按事件/定时触发（WebFetch 实读 README，MIT，7.1k★）。",
+  gap:"AGENTS.md:5 的声明式定义层只覆盖 agent 人设，工具面在 MCP/CLI/TUI 各写一份；11 种框架适配器没有 A2A 通道。",
+  action:"P1 — 按工作流约定的调研与选型前置，立项调研两条路线：① 单一 action 定义多面暴露 ② A2A 协议适配器；落点 swarm/mcp 工具注册与 FrameworkRouter，MIT 可直接参考实现。",
+  risk:"导入前先走三查强制。"}},
+{id:"h02-kohaku",idx:"H02",src:"github",title:"Kohaku-Lab/KohakuTerrarium",url:"https://github.com/Kohaku-Lab/KohakuTerrarium",date:"2026-10-11",p:"P2",
+ chips:["⭐ 520","66 forks","Python 3.10+","license KohakuTerrarium-1.0 (NOASSERTION)","push 2026-10-12","issues 4","topics: agent / agentic-framework / llm"],
+ what:"batteries-included 单应用：pip 装完即可跑完整编码 agent（文件工具 / shell / web 搜索 / 子 agent / 可续会话），同一 agent 又能以四行代码当库调用；多 agent 团队可组合并以 creature pack（@kt-biome）打包分发，TUI 与 Web UI 双界面。",
+ how:"形态是「框架 + 应用」合一：kt run 起会话、kt resume --last 精确续跑、kt install 装团队包——团队模板以包分发而不是仓库内静态 YAML，这是与本仓 TeamSwarm 形态的关键差异。",
+ summary:"⭐519（入池时点）通用 AI agent 框架与完整应用：构建、运行、组合自包含 agent 与多 agent 团队。",
+ advice:{practice:"batteries-included 单应用 + 可组合的 self-contained agent/多 agent 团队 + 内建 sub-agents/工具/持久化（GitHub API 实查 desc 与 519★ 确认多 agent teams 能力）。",
+  gap:"AgentSwarm 有 57 个声明式 agent 定义与 chains.yaml 11 条链（AGENTS.md:5 八层机制的声明式定义层），但团队是静态 YAML，缺开箱可运行的团队模板。",
+  action:"P2 — 对照 AGENTS.md 多 Agent 协作节的 TeamSwarm.from_template，补充 2-3 个可运行团队模板（如提案评审团/夜维巡检组）并注册到 skills/。",
+  risk:"先做技能排除论证，能纯技能实现就不升格模块。"}},
+{id:"h03-constitution",idx:"H03",src:"arxiv",title:"Constitutional Gating and Deterministic Recovery for Multi-Agent LLM Negotiation",url:"https://arxiv.org/abs/2610.11542v1",date:"2026-10-08",p:"P1",
+ chips:["cs.CL, cs.AI","29 pages, 3 figures","Gatekeeper/agent/宪法/30 份运行日志已开源","companion: arXiv:2610.09772"],
+ what:"三件套控制栈对抗有状态谈判对手：5 条运行时宪法、4 层 swarm（Director、三 agent 多数票、Monitor、schema 硬门）、Cognitive Annealing（确定性死锁检测 + 原子清除 agent 侧上下文 + 规范恢复消息）。消融显示宪法把解锁成功率从 0/5 提到 1/5–2/5，Cognitive Annealing 消除 polite loop 与死锁的模型调用浪费。",
+ how:"把「拒绝与恢复」做成确定性机制而不是模型自觉：死锁被识别后原子清空上下文并注入固定恢复消息，绕开永不满足对方隐藏接受条件的礼貌循环——恢复不消耗模型判断力。",
+ summary:"多 agent LLM 与有状态对手谈判时，polite loop、畸形输出重试、合规死锁三类浪费的控制栈与消融研究。",
+ advice:{practice:"宪法规则门控 + 确定性恢复，用消融证明可消除 polite loop 的模型调用浪费。",
+  gap:"gate_fail_closed（features.yaml:757）只管检查失败即阻断，运行中重复同型交互且无状态推进缺检测；消息转授已有 hops≤8 防环（features.yaml:3431）。",
+  action:"P1 — 在 loop2green L1-L3（features.yaml:208，同型失败 3 次硬出口）外增加无进展循环判据（loop_steps 连续 N 步无新状态变更→确定性恢复: 重置会话/降级模型），落点 swarm/lane/loop_session.py + loop_metrics gauge。",
+  risk:"不替换既有 L1-L3 硬出口，只增补。"}},
+{id:"h04-emfa",idx:"H04",src:"arxiv",title:"EMFA: Error-Propagation Modeling for Failure Attribution in LLM-Based Multi-Agent Systems",url:"https://arxiv.org/abs/2610.11600v1",date:"2026-10-08",p:"P1",
+ chips:["cs.AI","Who&When 基准 SOTA 步级归因","定义: 决定性错误 = 纠正它即可恢复执行的 agent-step 对"],
+ what:"为 LLM 多 agent 系统定义「决定性错误」（纠正该 agent-step 对即可恢复失败执行），显式建模错误的级联传播与持续未解决循环，用传播感知候选筛选 + 反事实验证定位，在 Who&When 基准取得 SOTA 步级归因准确率。",
+ how:"归因从「找可疑步骤」升级为「先建传播图、再反事实验证」——能区分首发错误与被传播污染的次生失败，这是本仓归因账本目前完全没有的维度。",
+ summary:"LLM MAS 失败归因困难：观测结果往往不直接暴露导致失败的错误；EMFA 建模传播与循环后做反事实验证。",
+ advice:{practice:"对 LLM MAS 建错误传播模型做失败归因，区分首发错误与被传播污染的次生失败。",
+  gap:"归因账本只记成本/token（features.yaml:1004 LLM 调用归因账本 usage_stats），dlq_retry 只做死信重试不标传播链（AGENTS.md:155/313），auto-fix 派生链 ≥3 才 needs_human（features.yaml:2383）。",
+  action:"P1 — 为失败事件增加传播标记（首发/传播深度）字段，接入 dlq_retry 分级重试与 loop_metrics gauge，按治理四件套交付（check 可 import + scheduler 注册 + gauge + EventBus severe）。",
+  risk:"治理四件套齐套才算完成。"}},
+{id:"h05-ecology",idx:"H05",src:"arxiv",title:"Ecology of AI Agents: Collaboration Creates a Population Threshold for Takeoff",url:"https://arxiv.org/abs/2610.12436v1",date:"2026-10-08",p:"P1",
+ chips:["cs.AI, cond-mat.dis-nn, cs.MA, physics.bio-ph","22 pages, 11 figures, 1 table"],
+ what:"提出「生态安全」理论：以种群增长方程建模 AI agent 群体，其中适合度（增长率）取决于网攻能力。证明无协作时只有单体能力超临界阈值才起飞；有协作时集体网攻能力随种群规模增长，产生更低的临界种群阈值——协作本身降低起飞门槛。",
+ how:"把安全视角从单体/固定群体扩展到种群动力学：这是「群体规模必须被当作监控变量」的第一性理论依据，而非工程直觉。",
+ summary:"agent 可实施真实网攻、能力随数量扩张、可集体追逐失准目标——本文回答失准群体何时被遏制、何时自增强起飞。",
+ advice:{practice:"证明 agent 协作规模存在临界阈值，越过阈值群体能力/风险质变。",
+  gap:"现有观测只报数量与利用率（grid_status/lane_status/swarm_stats），没有活跃 agent 数 × 协作边数的规模告警；对照 dual_instance_sentinel 只盯实例数。",
+  action:"P1 — 按治理组件交付四件套新增群体规模探针: check 可 import + scheduler 注册 + collector gauge + 超阈值发 EventBus error，落点 swarm/monitoring。",
+  risk:"阈值需基线数据，先 gauge 观察再定告警线。"}},
+{id:"h05b-mass",idx:"H06",src:"arxiv",title:"Recursive Self-Improvement through Multi-Agent Self-Supervision (MASS)",url:"https://arxiv.org/abs/2610.12176v1",date:"2026-10-08",p:"P1",
+ chips:["cs.AI","39 pages","Qwen3.6-27B 两周期 1.2–1.6× 每 token 性能"],
+ what:"非可验证任务上的递归自改进：单基座模型被提示去提出、执行、自评多 agent 工作流，进化搜索（受结构护栏约束）与自生成轨迹 SFT 交替两个 MASS 周期，在四个开放基准上每 token 性能提升 1.2–1.6×。",
+ how:"用多 agent 工作流互评突破「优化者=评估者」的同源监督瓶颈；结构护栏防止进化搜索跑飞——工作流被当作可进化的计算图来优化角色与信息路由。",
+ summary:"开放式研究等非可验证任务的 RSI 受监督瓶颈制约；MASS 让模型自迭代多 agent 工作流编排实现自我改进。",
+ advice:{practice:"用 agent 间互评突破监督瓶颈，避免单体自我评估失真。",
+  gap:"proposals review 有 CLI 缺 --json --dimension 静默落 5.0 默认分的实证（AGENTS.md 工作流约定·提案管理），评审与执行存在同源风险；授标信用维度已有防博弈三条款（features.yaml:3424 eval_history 第七维）。",
+  action:"P1 — 借其互评机制在 review 流程引入非作者 agent 的第二评审路径，并与 eval_history 信用维对账防自评刷分；落点 swarm/proposals review 链路 + gate_policy。",
+  risk:"自评刷分需与 eval_history 信用维对账。"}},
+{id:"h07-mental",idx:"H07",src:"arxiv",title:"Mental-Models for Multi-Agent Systems",url:"https://arxiv.org/abs/2610.12453v1",date:"2026-10-08",p:"P2",
+ chips:["cs.MA","Accepted at NeurIPS 2026"],
+ what:"给 agent 装一个摊销式递归心智模型（一阶 + 二阶心理状态），从观察历史推断协作者的隐信念、意图与可能反应，配合信念条件奖励模型评估候选动作；推理时独立行动但保留对伙伴状态的推断。",
+ how:"协作者状态成为显式、可跨任务复用的决策变量，而不是靠 prompt 设计、记忆或端到端行为塑造去隐式表达。",
+ summary:"多 agent 稳健决策需要在部分可观测下推理他者所知所图；当前系统缺可复用的显式伙伴状态表征。",
+ advice:{practice:"让 agent 显式建模协作者的心智模型以改善协作决策。",
+  gap:"TeamSwarm 的共享记忆 MemoryHub crew_finding 只传结论，不传对协作者能力/倾向的预期；四维路由的专长×0.1（AGENTS.md:32）只看声明档案。",
+  action:"P2 — 以该论文为 AS-PROP 调研与选型素材（arXiv 链接同时满足 _check_arxiv_evidence 留痕），评估在 MemoryHub 增加协作者画像条目并在路由读取阶段注入，强化专长维的动态输入。",
+  risk:"—"}},
+{id:"h08-oamap",idx:"H08",src:"arxiv",title:"OA-MAP: Evidence-Grounded Multi-Agent Multimodal Framework for Knee Osteoarthritis Progression",url:"https://arxiv.org/abs/2610.12134v1",date:"2026-10-08",p:"P2",
+ chips:["cs.AI, cs.MA","FNIH 队列 600 人","测试集结构进展 AUROC 0.80"],
+ what:"膝骨关节炎进展评估的多 agent 框架：MRI / X 光 / 临床专科 agent + 协调者 agent，自主招募专家、选工具、按需检索文献作外部证据；不确定性知情的人在环机制允许临床医生纠错并触发受影响结果的级联重算。",
+ how:"可解释性来自证据链而非事后解释器：每个结论强制携带可追溯证据引用，纠错后自动重算下游——结论与证据同生命周期。",
+ summary:"孤立的风险估计价值有限；OA-MAP 自动化评估工作流并提供可解释发现与支撑证据。",
+ advice:{practice:"多智能体分工后按证据接地（evidence-grounded）汇总，结论可解释可追溯。",
+  gap:"门禁链已有分级注入与豁免留痕（features.yaml:733 gate_policy_injection、757 gate_fail_closed），但 verdict 结构缺强制证据引用。",
+  action:"P2 — 在 swarm/orchestration/engine.py::_check_gate 结果中增加 evidence 必填字段（DB 行/日志/文件锚点），先 warning 观察期再转阻断，对齐接口契约三戒第 3 条重大结论双路径验证。",
+  risk:"先 warning 观察期再转阻断。"}},
+{id:"h09-disinfo",idx:"H09",src:"arxiv",title:"Automated Disinformation and Malicious AI Swarms: Risks for Democracy and Development in Africa",url:"https://arxiv.org/abs/2610.11930v1",date:"2026-10-08",p:"P2",
+ chips:["cs.CY","26 pages","案例: 马里 / 埃塞俄比亚"],
+ what:"定义「恶意 AI swarm」——为影响行动设计的协同、持久、自适应多 agent 系统，与 AI 辅助内容生产及中心管理的合成人格明确区分；给出威胁分类（批量生成、协同传播），并以马里与埃塞俄比亚案例展示不同威胁构型对脆弱媒体环境的侵蚀路径。",
+ how:"把 swarm 滥用从模糊担忧变成可检查的威胁模型：「批量生成速率 + 跨 agent 内容一致性」是可直接工程化的检查维度。",
+ summary:"尚无全自动 AI swarm 规模化影响行动的确证，但使能能力在快速进步；本文给出定义、分类与区域风险分析。",
+ advice:{practice:"对规模化恶意 AI swarm 给出威胁分类（批量生成、协同传播）。",
+  gap:"charter.yaml 5 道门禁中的安全审查（AGENTS.md:31）面向单任务审查，无批量协同滥用维度。",
+  action:"P2 — 将其威胁分类映射为安全审查 gate 的检查项（批量生成速率、跨 agent 内容一致性），经 features.yaml:733 gate_policy_injection 注入，不改引擎代码。",
+  risk:"走注入不改引擎。"}},
+{id:"h10-ensemble",idx:"H10",src:"arxiv",title:"From Solo to Ensemble: Hierarchical Composable Multi-Agent Human-Object Interaction",url:"https://arxiv.org/abs/2610.11722v1",date:"2026-10-08",p:"P2",
+ chips:["cs.RO","Object-oriented Motion Skill 蒸馏"],
+ what:"把单 agent 人-物交互策略蒸馏为可复用的「面向对象运动技能」：从教师 rollout 提取短时程对象代理动作构成对象导向动作空间，低层技能冻结为可复用执行器，高层策略按共享对象、目标、agent 状态与局部操作区生成区域内对象动作来协调多 agent。",
+ how:"协作从「接触级全身控制」抬升到「对象级代理运动」——技能与协调解耦后可跨几何、跨任务、跨队伍规模复用，这正是可组合链的物理版本。",
+ summary:"多 agent 协作任务上单技能外推困难；层级可组合框架把协调与执行解耦提升复用性。",
+ advice:{practice:"层级式可组合多智能体——单 agent 技能向上组装成层级 ensemble 完成协作任务。",
+  gap:"chains.yaml 11 条链是平铺的顺序/并行/扇出-汇聚（AGENTS.md:5 链式流转层），子链不可复用嵌套。",
+  action:"P2 — 评估 chains.yaml schema 增加嵌套链引用（子链作为可组合单元），落点 OrchestrationEngine 链解析。",
+  risk:"创建提案前先查 features.yaml 注册表防重复实现。"}},
+{id:"h11-spatial",idx:"H11",src:"arxiv",title:"Spatial Pattern Formation from Multi-Agent Learning in Public Goods Dilemmas",url:"https://arxiv.org/abs/2610.12321v1",date:"2026-10-08",p:null,
+ chips:["cs.MA, cs.GT, cs.LG","tabular Q-learning + 局部观测"],
+ what:"公共品困境中多 agent 独立学习移动策略会产生空间图样：合作者聚向资源峰形成集群；固定训练预算下「合作者高学习率 × 背叛者低学习率」时集体福利损失最大，还会出现共享方向偏好的移动带——图样由训练史而非渐近均衡决定。",
+ how:"拥挤外部性定价（对拥挤收费）可收回大部分福利损失——这是群体学习中机制杠杆优于调参的又一例证。本期无建议：与本仓机制距离较远，留作群体调度远期参考。",
+ summary:"预设向富区移动产生空间图样；本文追问学习速率如何塑造图样与集体福利。",
+ advice:null}
+];
+
+/* --- 8 medium 紧凑归档 --- */
+var MED = [
+{id:"m1-legalon",src:"openai",title:"LegalOn halves Codex costs while maintaining development speed",url:"https://openai.com/index/legalon-halves-codex-costs",date:"2026-10-08",p:"P1",
+ chips:["openai.com 官方博客"],what:"Astra / Sol / Luna 按任务分工 + 预算档位管理，日 Codex 预估成本降 65% 而开发速度不降——任务级模型分层而非全量用最强模型。",tag:"本期 Top 1 来源"},
+{id:"m2-elledger",src:"arxiv",title:"Safe, Persistent, and Evolving Agent Harness (E-Ledger + WorldAbduct)",url:"https://arxiv.org/abs/2610.11552v1",date:"2026-10-08",p:"P1",
+ chips:["cs.AI","World of Workflows 企业基准"],what:"动作审批层对每个拟执行动作做策略前置校验 + 世界账本记录已验证隐藏规则；WorldAbduct 从四个视角诊断轨迹、溯因出潜在规则并验证入账，harness 随时间进化。",tag:""},
+{id:"m3-uniagent",src:"github",title:"verl-project/uni-agent",url:"https://github.com/verl-project/uni-agent",date:"2026-10-11",p:"P2",
+ chips:["⭐ 657","132 forks","Python","Apache-2.0","push 2026-10-12"],what:"长时程 agent 训练框架：任意 harness 经 Uni-Agent Gateway 接入 RL（请求进、训练 token 出），Agent/Tool/Task/Sandbox 白盒解耦，并发采可训练轨迹（SFT 与 RL）。",tag:""},
+{id:"m4-asana",src:"openai",title:"Asana cuts model costs 76x in browser tests with GPT-6.1 Sol",url:"https://openai.com/index/asana-browser-agent",date:"2026-10-09",p:"P2",
+ chips:["openai.com 官方博客","76× 降本 · 5× 提速（测试）"],what:"浏览器 agent 按任务匹配模型（Sol / Astra 分工）：Codex 中用 GPT-6 Astra，测试环境成本降 76×、速度 5×。",tag:""},
+{id:"m5-qedc",src:"arxiv",title:"Autonomous Code Migration for Quantum Programming: QED-C Benchmarks (Qiskit → CUDA-Q)",url:"https://arxiv.org/abs/2610.12187v1",date:"2026-10-08",p:"P2",
+ chips:["quant-ph","13 个基准方法"],what:"Opus / GPT / Gemini 三个模型均以极少人工帮助完成 Qiskit→CUDA-Q 迁移、耗时远低于人类工程师；但全部在实现遇阻时走捷径，需要多轮 prompt 才强制正确实现——迁移能力可用但需固定验收集兜底。",tag:""},
+{id:"m6-ironclad",src:"openai",title:"Advancing computer use with Ironclad",url:"https://openai.com/index/advancing-computer-use-with-ironclad",date:"2026-10-06",p:"P2",
+ chips:["openai.com 官方博客"],what:"OpenAI 与 Ironclad 在真实合同审查工作流上训练与评测 computer-use agent——以领域工作流为评测单元而非单点操作。",tag:""},
+{id:"m7-hyperframes",src:"github",title:"heygen-com/hyperframes",url:"https://github.com/heygen-com/hyperframes",date:"2026-10-11",p:null,
+ chips:["⭐ 61,640","5,513 forks","TypeScript","Apache-2.0"],what:"Write HTML. Render video. Built for agents. — 面向 agent 的 HTML→视频渲染管线（GSAP / Puppeteer / FFmpeg / MCP）。本期无建议，热度记录。",tag:"热度记录"},
+{id:"m8-meworld",src:"arxiv",title:"Multi-Agent Egocentric World Model (ME-World)",url:"https://arxiv.org/abs/2610.12299v1",date:"2026-10-08",p:null,
+ chips:["cs.CV, cs.AI"],what:"多 agent 第一人称世界模型：多条 ego 流在共享 token 序列中联合去噪，以共享环境记忆 grounding，提出共享世界一致性指标。本期无建议，具身方向记录。",tag:""}
+];
+
+/* --- 16 条落地清单（优先级/摘要/落点/估时/风险）--- */
+var LANDING = [
+{p:"P1",t:"task_type → model tier 映射，与 per-task token 预算联动",loc:"swarm/llm/providers/modelswarm.py::_resolve_route + O3 预算（features.yaml:2798）",est:"2d",risk:"配置变更须纳入 key_pool_health(:2024) 30min 对账；先 warning",src:"LegalOn"},
+{p:"P1",t:"无进展循环判据：loop_steps 连续 N 步无新状态 → 确定性恢复",loc:"swarm/lane/loop_session.py + loop_metrics gauge（loop2green :208 之外增补）",est:"3d",risk:"N 取值需回放历史 run 校准，避免误杀慢任务",src:"Constitutional Gating"},
+{p:"P1",t:"失败事件增加传播标记（首发 / 传播深度），dlq_retry 分级重试",loc:"失败事件结构 + dlq_retry（AGENTS.md:155/313）+ loop_metrics",est:"4d",risk:"治理四件套齐套交付；与 auto-fix needs_human 阈值(:2383) 协同",src:"EMFA"},
+{p:"P1",t:"群体规模探针：活跃 agent 数 × 协作边数超阈值告警",loc:"swarm/monitoring 四件套（check/scheduler/gauge/EventBus）",est:"3d",risk:"阈值需基线数据，先 gauge 观察一周",src:"Ecology"},
+{p:"P1",t:"proposals review 引入非作者 agent 第二评审路径",loc:"swarm/proposals review 链路 + gate_policy",est:"3d",risk:"与 eval_history 信用维(:3424) 对账防自评刷分",src:"MASS"},
+{p:"P1",t:"工具执行入口动作级约束闸（参数白名单 / 副作用声明校验）",loc:"swarm/lane/work_once.py + gate_policy 注入(:733) fail-closed(:757)",est:"5d",risk:"白名单需盘点存量工具调用面，先 warning 期",src:"E-Ledger"},
+{p:"P1",t:"立项调研：单一 action 多面暴露 与 A2A 协议适配器两条路线",loc:"swarm/mcp 工具注册 + FrameworkRouter（调研产出 AS-PROP）",est:"3d",risk:"调研与选型前置；导入实现前走三查强制",src:"agent-native"},
+{p:"P2",t:"补充 2-3 个可运行团队模板（提案评审团 / 夜维巡检组）",loc:"TeamSwarm.from_template + skills/ 注册",est:"2d",risk:"先做技能排除论证，能纯技能实现就不升格模块",src:"KohakuTerrarium"},
+{p:"P2",t:"MemoryHub 增加协作者画像条目，路由读取阶段注入",loc:"MemoryHub crew_finding + 四维路由专长维（AGENTS.md:32）",est:"3d",risk:"AS-PROP 调研选型素材；arXiv 链接满足 evidence 留痕",src:"Mental-Models"},
+{p:"P2",t:"_check_gate 结果增加 evidence 必填字段（DB 行/日志/文件锚点）",loc:"swarm/orchestration/engine.py::_check_gate",est:"2d",risk:"先 warning 观察期再转阻断；对齐双路径验证",src:"OA-MAP"},
+{p:"P2",t:"恶意 swarm 威胁分类映射为安全审查 gate 检查项",loc:"charter.yaml 安全审查经 gate_policy_injection(:733) 注入",est:"1d",risk:"批量生成速率、跨 agent 内容一致性两检查项",src:"Disinformation"},
+{p:"P2",t:"chains.yaml schema 增加嵌套链引用（子链可组合单元）",loc:"OrchestrationEngine 链解析 + chains.yaml",est:"4d",risk:"先查 features.yaml 注册表防重复实现",src:"From Solo to Ensemble"},
+{p:"P2",t:"eval_history 增加链长 / horizon 分桶字段",loc:"eval_history(:2482)；四维路由保持终选权威",est:"2d",risk:"只作能力维细化输入，不动终选逻辑",src:"uni-agent"},
+{p:"P2",t:"hyper / zen 任务各建 cost/speed 基线并回写 eval_history",loc:"eval_history + O5 预算熔断阈值(:2798) 调参",est:"2d",risk:"基线样本需 ≥2 周积累再用于调参",src:"Asana"},
+{p:"P2",t:"迁移类任务固定验收集模板写入 exit_criteria",loc:"提案 exit_criteria 完成标准模板（skills/create-proposal）",est:"1d",risk:"输入语料 + 期望 diff 固定，防捷径通过",src:"QED-C 迁移研究"},
+{p:"P2",t:"computer-use 类任务建 3-5 条固定工作流验收用例",loc:"run-e2e-tests 技能链路 + 提案 exit_criteria",est:"2d",risk:"以领域工作流为评测单元，不测单点操作",src:"Ironclad"}
+];
+
+/* --- 05 优先级分布（按落点模块聚类）--- */
+var PRIO_MODULES = [
+ {m:"llm 路由 / 预算",p1:1,p2:1},{m:"lane 循环 / 恢复",p1:2,p2:0},{m:"失败归因 / dlq",p1:1,p2:0},
+ {m:"monitoring 探针",p1:1,p2:0},{m:"proposals 评审",p1:1,p2:0},{m:"orchestration 门禁",p1:0,p2:2},
+ {m:"链式流转 schema",p1:0,p2:1},{m:"MemoryHub / 路由画像",p1:0,p2:1},{m:"skills / 模板 / exit_criteria",p1:0,p2:3},
+ {m:"eval_history 基线",p1:0,p2:1}
+];
+
+/* ================= RENDER: 焦点卡（封面 + 03 同源） ================= */
+var FOCUS_IDS = ["h01-agent-native","h05-ecology","h04-emfa","h03-constitution","h05b-mass"];
+function srcBadge(s){var c=SRC[s];return '<span class="badge '+c.cls+'">'+c.label+'</span>';}
+function pBadge(p){if(!p)return '<span class="badge high">观察</span>';return '<span class="badge '+p.toLowerCase()+'">'+p+'</span>';}
+function focusCard(h,compact){
+  return '<a class="card focuscard" href="'+h.url+'" target="_blank" rel="noopener" data-od-id="focus-'+h.id+'">'+
+   '<div class="fc-top">'+srcBadge(h.src)+pBadge(h.p)+'<span class="num" style="font-size:11px;color:var(--dim)">'+h.idx+'</span></div>'+
+   '<h3>'+h.title+'</h3><p>'+h.what.split('。')[0]+'。</p></a>';
+}
+var focusHTML = FOCUS_IDS.map(function(id){
+  var h=HIGH.filter(function(x){return x.id===id;})[0];return focusCard(h,true);
+}).join('');
+document.getElementById('cover-focus').innerHTML = focusHTML;
+document.getElementById('focus-cards').innerHTML = focusHTML;
+
+/* ================= RENDER: 落地清单表 ================= */
+document.getElementById('cltable-body').innerHTML = LANDING.map(function(r,i){
+  return '<tr data-od-id="landing-row-'+(i+1)+'"><td>'+pBadge(r.p)+'</td>'+
+   '<td class="t">'+r.t+'<span class="pt">来源: '+r.src+'</span></td>'+
+   '<td><span class="num" style="font-size:11.5px">'+r.loc+'</span></td>'+
+   '<td class="num">'+r.est+'</td><td>'+r.risk+'</td></tr>';
+}).join('');
+
+/* ================= RENDER: 档案卡 ================= */
+function adviceBlock(a,p){
+  if(!a)return '<div class="advice p-none"><div class="advice-head">'+pBadge(null)+'<span style="font-size:12px;color:var(--dim)">本期无建议（观察条目）</span></div></div>';
+  return '<div class="advice p-'+p+'" data-od-id="advice">'+
+   '<div class="advice-head">'+pBadge(p)+'<span style="font-size:12px;color:var(--dim)">四段式评估</span></div>'+
+   '<div class="advice-seg"><b>外部做法：</b>'+a.practice+'</div>'+
+   '<div class="advice-seg"><b>差距：</b>'+a.gap+'</div>'+
+   '<div class="advice-seg"><b>建议：</b>'+a.action+'</div>'+
+   '<div class="advice-seg"><b>风险 / 前置：</b>'+a.risk+'</div></div>';
+}
+document.getElementById('archive-high').innerHTML = HIGH.map(function(h){
+  var links = '<div class="linkgroup"><a href="'+h.url+'" target="_blank" rel="noopener">原文 ↗</a>'+
+    (h.src==='github'?'<a href="'+h.url+'" target="_blank" rel="noopener">README 素材</a>':'<a href="'+h.url+'" target="_blank" rel="noopener">arXiv 摘要 ↗</a>')+
+    '<a href="#sec-eco">→ 04 建议生态</a></div>';
+  return '<article class="card arch" data-od-id="archive-'+h.id+'">'+
+   '<div class="arch-head">'+srcBadge(h.src)+pBadge(h.p)+'<span class="arch-idx">'+h.idx+'</span>'+
+   '<span class="num" style="font-size:11.5px;color:var(--dim)">'+h.date+'</span></div>'+
+   '<a class="arch-title" href="'+h.url+'" target="_blank" rel="noopener">'+h.title+'</a>'+
+   '<div class="metabar">'+h.chips.map(function(c){return '<span class="chip'+(c.indexOf('⭐')===0?' star':'')+'">'+c+'</span>';}).join('')+'</div>'+
+   '<div class="wh"><span class="lbl">【是什么】</span>'+h.what+'</div>'+
+   '<div class="wh how"><span class="lbl">【怎么设计的】</span>'+h.how+'</div>'+
+   '<div class="wh sum"><span class="lbl">【摘要】</span>'+h.summary+'</div>'+
+   adviceBlock(h.advice,h.p)+links+'</article>';
+}).join('');
+document.getElementById('archive-medium').innerHTML = MED.map(function(m){
+  return '<div class="card hoverable" data-od-id="archive-'+m.id+'" style="padding:16px 20px">'+
+   '<div class="medrow"><div style="display:flex;flex-direction:column;gap:6px">'+
+   srcBadge(m.src)+'<span style="display:flex;gap:6px">'+pBadge(m.p)+(m.tag?'<span class="badge high">'+m.tag+'</span>':'')+'</span>'+
+   '<span class="num" style="font-size:11px;color:var(--dim)">'+m.date+'</span></div>'+
+   '<div><a class="mt" href="'+m.url+'" target="_blank" rel="noopener" style="color:var(--fg)">'+m.title+'</a>'+
+   '<div class="mdesc">'+m.what+'</div>'+
+   '<div class="metabar" style="margin:8px 0 0">'+m.chips.map(function(c){return '<span class="chip'+(c.indexOf('⭐')===0?' star':'')+'">'+c+'</span>';}).join('')+'</div></div>'+
+   '<div><a href="'+m.url+'" target="_blank" rel="noopener" class="num" style="font-size:11.5px">原文 ↗</a></div></div></div>';
+}).join('');
+
+/* ================= SVG: 建议关联网 ================= */
+(function(){
+  var L=[
+   {id:"an",t:"agent-native",s:"github",p:"P1"},{id:"kt",t:"KohakuTerrarium",s:"github",p:"P2"},
+   {id:"lo",t:"LegalOn 降本 65%",s:"openai",p:"P1"},{id:"as",t:"Asana 降本 76×",s:"openai",p:"P2"},
+   {id:"ic",t:"Ironclad 合同流",s:"openai",p:"P2"},{id:"ua",t:"uni-agent",s:"github",p:"P2"},
+   {id:"cg",t:"Constitutional Gating",s:"arxiv",p:"P1"},{id:"em",t:"EMFA 传播归因",s:"arxiv",p:"P1"},
+   {id:"ec",t:"Ecology 种群阈值",s:"arxiv",p:"P1"},{id:"ms",t:"MASS 互评",s:"arxiv",p:"P1"},
+   {id:"el",t:"E-Ledger 动作闸",s:"arxiv",p:"P1"},{id:"mm",t:"Mental-Models",s:"arxiv",p:"P2"},
+   {id:"oa",t:"OA-MAP 证据接地",s:"arxiv",p:"P2"},{id:"di",t:"恶意 swarm 分类",s:"arxiv",p:"P2"},
+   {id:"se",t:"Solo→Ensemble",s:"arxiv",p:"P2"},{id:"qd",t:"QED-C 迁移基准",s:"arxiv",p:"P2"}
+  ];
+  var R=[
+   {id:"A",t:"modelswarm 路由 / 预算"},{id:"B",t:"loop_session / loop_metrics"},{id:"C",t:"失败事件 / dlq_retry"},
+   {id:"D",t:"swarm/monitoring 探针"},{id:"E",t:"proposals review 评审"},{id:"F",t:"work_once 动作闸"},
+   {id:"G",t:"gate_policy 注入"},{id:"H",t:"eval_history 基线"},{id:"I",t:"chains.yaml schema"},
+   {id:"J",t:"skills / exit_criteria"},{id:"K",t:"MemoryHub 画像"},{id:"L",t:"mcp 注册 / FrameworkRouter"}
+  ];
+  var E=[["an","L"],["kt","J"],["lo","A"],["lo","H"],["as","H"],["ic","J"],["ua","H"],["cg","B"],["em","C"],["em","B"],
+         ["ec","D"],["ms","E"],["el","F"],["el","G"],["mm","K"],["oa","G"],["di","G"],["se","I"],["qd","J"]];
+  var LX=30,LW=250,RX=1080,RW=260,TOP=24,LG=36,RG=50;
+  var svg='<g class="net-edges">';
+  E.forEach(function(e){
+    var li=L.findIndex(function(n){return n.id===e[0];}),ri=R.findIndex(function(n){return n.id===e[1];});
+    var ln=L[li],y1=TOP+li*LG+15,y2=TOP+ri*RG+16,x1=LX+LW,x2=RX,c=PC[ln.p];
+    svg+='<path class="netedge" data-src="'+e[0]+'" data-tgt="'+e[1]+'" d="M'+x1+' '+y1+' C'+(x1+300)+' '+y1+' '+(x2-300)+' '+y2+' '+x2+' '+y2+'" fill="none" stroke="'+c+'" stroke-width="1.4" stroke-opacity=".45"><title>'+ln.t+' → '+R[ri].t+'</title></path>';
+  });
+  svg+='</g>';
+  L.forEach(function(n,i){
+    var y=TOP+i*LG,c=SRC[n.s].color;
+    svg+='<g class="netnode" data-node="'+n.id+'"><rect x="'+LX+'" y="'+y+'" width="'+LW+'" height="30" rx="7" fill="#141c27" stroke="'+c+'" stroke-opacity=".55"/>'+
+     '<circle cx="'+(LX+15)+'" cy="'+(y+15)+'" r="4" fill="'+c+'"/>'+
+     '<text x="'+(LX+28)+'" y="'+(y+20)+'" fill="#e8eef6" font-size="12.5" font-family="MiSans,PingFang SC,sans-serif">'+n.t+'</text>'+
+     '<text x="'+(LX+LW-10)+'" y="'+(y+20)+'" text-anchor="end" fill="'+PC[n.p]+'" font-size="10.5" font-family="JetBrains Mono,monospace">'+n.p+'</text></g>';
+  });
+  R.forEach(function(n,i){
+    var y=TOP+i*RG;
+    svg+='<g class="netnode" data-node="'+n.id+'"><rect x="'+RX+'" y="'+y+'" width="'+RW+'" height="32" rx="7" fill="#10161f" stroke="#2b3648"/>'+
+     '<text x="'+(RX+14)+'" y="'+(y+21)+'" fill="#93a1b3" font-size="12.5" font-family="MiSans,PingFang SC,sans-serif">'+n.t+'</text></g>';
+  });
+  document.getElementById('net-svg').innerHTML=svg;
+  var wrap=document.getElementById('net-svg').parentNode,paths=wrap.querySelectorAll('.netedge');
+  wrap.querySelectorAll('.netnode').forEach(function(g){
+    var id=g.getAttribute('data-node');
+    g.addEventListener('mouseenter',function(){
+      wrap.classList.add('net-dim');
+      paths.forEach(function(p){p.classList.toggle('hot',p.getAttribute('data-src')===id||p.getAttribute('data-tgt')===id);});
+    });
+    g.addEventListener('mouseleave',function(){wrap.classList.remove('net-dim');paths.forEach(function(p){p.classList.remove('hot');});});
+  });
+})();
+
+/* ================= SVG: 影响圈 ================= */
+(function(){
+  var s='<circle cx="210" cy="210" r="196" fill="none" stroke="#8b98a9" stroke-opacity=".35" stroke-width="1.5" stroke-dasharray="5 5"/>'+
+        '<circle cx="210" cy="210" r="140" fill="none" stroke="#f5a524" stroke-opacity=".4" stroke-width="1.5"/>'+
+        '<circle cx="210" cy="210" r="84" fill="rgba(16,163,127,.10)" stroke="#10a37f" stroke-width="2"/>';
+  var dots=[[210,126],[294,210],[210,294],[126,210],[269,151],[151,269],[269,269]];
+  dots.forEach(function(d){s+='<circle cx="'+d[0]+'" cy="'+d[1]+'" r="5" fill="#10a37f"/>';});
+  [[210,70],[350,210],[210,350],[70,210]].forEach(function(d){s+='<circle cx="'+d[0]+'" cy="'+d[1]+'" r="4.5" fill="#f5a524"/>';});
+  [[210,14],[406,210],[210,406],[14,210]].forEach(function(pos){s+='<circle cx="'+pos[0]+'" cy="'+pos[1]+'" r="4" fill="#8b98a9" stroke="#0a0e14" stroke-width="1.5"/>';});
+  s+='<text x="210" y="202" text-anchor="middle" fill="#e8eef6" font-size="30" font-weight="700" font-family="JetBrains Mono,monospace">16</text>'+
+     '<text x="210" y="228" text-anchor="middle" fill="#93a1b3" font-size="12" font-family="MiSans,PingFang SC,sans-serif">建议 · P1×7 P2×9</text>';
+  document.getElementById('ring-svg').innerHTML=s;
+})();
+
+/* ================= ECHARTS ================= */
+var FONT='MiSans, PingFang SC, sans-serif';
+var AXIS={axisLine:{lineStyle:{color:'#2b3648'}},axisLabel:{color:'#93a1b3',fontFamily:FONT},splitLine:{lineStyle:{color:'rgba(30,39,51,.7)'}}};
+var TIP={backgroundColor:'#141c27',borderColor:'#2b3648',textStyle:{color:'#e8eef6',fontFamily:FONT,fontSize:12}};
+function mk(id){return echarts.init(document.getElementById(id),null,{renderer:'canvas'});}
+var charts=[];
+/* 七日趋势（03 + 05 同源） */
+var DAYS=['10-06','10-07','10-08','10-09','10-10','10-11','10-12'];
+var DAYV=[1,0,17,1,0,12,0];
+function trendOpt(){return {backgroundColor:'transparent',grid:{left:40,right:16,top:24,bottom:30},
+ tooltip:Object.assign({trigger:'axis'},TIP),
+ xAxis:Object.assign({type:'category',data:DAYS},AXIS),
+ yAxis:Object.assign({type:'value',minInterval:1},AXIS),
+ series:[{type:'bar',data:DAYV,barWidth:'46%',itemStyle:{color:function(p){return p.dataIndex===2?'#f0756a':(p.dataIndex===5?'#8b98a9':'#10a37f');},borderRadius:[5,5,0,0]},
+  label:{show:true,position:'top',color:'#93a1b3',fontFamily:'JetBrains Mono,monospace',fontSize:11}}]};}
+charts.push([mk('chart-trend'),trendOpt()]);charts.push([mk('chart-trend5'),trendOpt()]);
+/* 来源环图 */
+charts.push([mk('chart-donut-src'),{backgroundColor:'transparent',tooltip:TIP,legend:{bottom:0,textStyle:{color:'#93a1b3',fontFamily:FONT,fontSize:11}},
+ series:[{type:'pie',radius:['52%','74%'],center:['50%','44%'],label:{color:'#e8eef6',fontFamily:FONT,fontSize:12,formatter:'{b}\n{c} 条'},
+  data:[{name:'arxiv',value:15,itemStyle:{color:'#f0756a'}},{name:'github',value:12,itemStyle:{color:'#8b98a9'}},{name:'openai',value:4,itemStyle:{color:'#10a37f'}}]}]}]);
+/* 分级环图 */
+charts.push([mk('chart-donut-grade'),{backgroundColor:'transparent',tooltip:TIP,legend:{bottom:0,textStyle:{color:'#93a1b3',fontFamily:FONT,fontSize:11}},
+ series:[{type:'pie',radius:['52%','74%'],center:['50%','44%'],label:{color:'#e8eef6',fontFamily:FONT,fontSize:12,formatter:'{b}\n{c} 条'},
+  data:[{name:'high',value:11,itemStyle:{color:'#f5a524'}},{name:'medium',value:8,itemStyle:{color:'#4c9aff'}},{name:'丢弃',value:12,itemStyle:{color:'#2b3648'}}]}]}]);
+/* 热力图 7×6 */
+var HEATSRC=['openai','anthropic','huggingface','github','arxiv','producthunt'];
+var HEATDATA=[[0,0,1],[2,0,2],[3,0,1],[5,3,12],[2,4,15]]; /* [day, source, count] */
+var heatMax=15;
+charts.push([mk('chart-heat'),{backgroundColor:'transparent',grid:{left:88,right:16,top:36,bottom:56},
+ tooltip:Object.assign({formatter:function(p){return HEATSRC[p.value[1]]+' · '+DAYS[p.value[0]]+'<br><b>'+p.value[2]+'</b> 条';}},TIP),
+ xAxis:Object.assign({type:'category',data:DAYS},AXIS),
+ yAxis:Object.assign({type:'category',data:HEATSRC},AXIS),
+ visualMap:{min:0,max:heatMax,calculable:false,orient:'horizontal',left:'center',bottom:0,textStyle:{color:'#93a1b3',fontFamily:FONT,fontSize:11},
+  inRange:{color:['#10161f','#123a31','#10a37f','#f5a524']}},
+ series:[{type:'heatmap',data:HEATDATA,label:{show:true,color:'#e8eef6',fontFamily:'JetBrains Mono,monospace',fontSize:11,
+  formatter:function(p){return p.value[2]||'';}},itemStyle:{borderColor:'#0a0e14',borderWidth:2,borderRadius:4}}]}]);
+/* 两轮对比 slope */
+charts.push([mk('chart-slope'),{backgroundColor:'transparent',grid:{left:40,right:60,top:28,bottom:30},
+ tooltip:Object.assign({trigger:'item'},TIP),
+ xAxis:Object.assign({type:'category',data:['10-11 轮','10-12 轮'],boundaryGap:false},AXIS),
+ yAxis:Object.assign({type:'value',max:16},AXIS),
+ series:[{name:'arxiv',type:'line',data:[15,15],color:'#f0756a',symbolSize:7,endLabel:{show:true,formatter:'arxiv',color:'#f0756a',fontSize:11,fontFamily:FONT}},
+  {name:'github',type:'line',data:[14,12],color:'#8b98a9',symbolSize:7,endLabel:{show:true,formatter:'github',color:'#8b98a9',fontSize:11,fontFamily:FONT}},
+  {name:'openai',type:'line',data:[4,4],color:'#10a37f',symbolSize:7,endLabel:{show:true,formatter:'openai',color:'#10a37f',fontSize:11,fontFamily:FONT}},
+  {name:'huggingface',type:'line',data:[9,0],color:'#ff9d2e',symbolSize:7,endLabel:{show:true,formatter:'hf 失败',color:'#ff9d2e',fontSize:11,fontFamily:FONT}},
+  {name:'anthropic',type:'line',data:[7,0],color:'#d97757',symbolSize:7,endLabel:{show:true,formatter:'anthropic 失败',color:'#d97757',fontSize:11,fontFamily:FONT}},
+  {name:'producthunt',type:'line',data:[6,0],color:'#da552f',symbolSize:7,endLabel:{show:true,formatter:'ph 失败',color:'#da552f',fontSize:11,fontFamily:FONT}}]}]);
+/* 优先级分布 */
+charts.push([mk('chart-prio'),{backgroundColor:'transparent',grid:{left:150,right:50,top:16,bottom:30},
+ tooltip:Object.assign({trigger:'axis',axisPointer:{type:'shadow'}},TIP),
+ legend:{top:0,textStyle:{color:'#93a1b3',fontFamily:FONT,fontSize:11}},
+ xAxis:Object.assign({type:'value',minInterval:1},AXIS),
+ yAxis:Object.assign({type:'category',data:PRIO_MODULES.map(function(m){return m.m;}).reverse()},AXIS),
+ series:[{name:'P1',type:'bar',stack:'p',data:PRIO_MODULES.map(function(m){return m.p1;}).reverse(),itemStyle:{color:'#f5a524',borderRadius:[0,0,0,0]},barWidth:'58%'},
+  {name:'P2',type:'bar',stack:'p',data:PRIO_MODULES.map(function(m){return m.p2;}).reverse(),itemStyle:{color:'#4c9aff'},label:{show:true,position:'right',color:'#93a1b3',fontFamily:'JetBrains Mono,monospace',fontSize:11,formatter:function(p){var row=PRIO_MODULES.slice().reverse()[p.dataIndex];return (row.p1+row.p2)||'';}}}]}]);
+/* 矩阵散点（16 条，±0.1 错位避免同格重叠） */
+var SC=[["LegalOn tier 映射",2,5,"P1"],["无进展循环判据",3,4,"P1"],["失败传播标记",3.1,4,"P1"],["群体规模探针",2,3,"P1"],
+ ["非作者第二评审",3,4.1,"P1"],["动作级约束闸",4,4,"P1"],["A2A/多面暴露调研",2.1,4,"P1"],
+ ["团队模板",2,2.1,"P2"],["协作者画像",3,3,"P2"],["gate evidence 字段",2.1,3,"P2"],["恶意 swarm 检查项",1,2,"P2"],
+ ["嵌套链 schema",4,3,"P2"],["horizon 分桶",2,2,"P2"],["cost/speed 基线",2.1,2,"P2"],["迁移验收集模板",1,2.1,"P2"],["工作流验收用例",2,1.9,"P2"]];
+var seriesP=function(lv){return {name:lv,type:'scatter',symbolSize:24,
+ itemStyle:{color:PC[lv],opacity:.88,borderColor:'#0a0e14',borderWidth:1.5},
+ data:SC.filter(function(r){return r[3]===lv;})};};
+charts.push([mk('chart-scatter'),{backgroundColor:'transparent',grid:{left:44,right:24,top:36,bottom:44},
+ tooltip:Object.assign({formatter:function(p){return '<b>'+p.data[3]+' · '+p.data[0]+'</b><br>影响 '+p.value[1]+' · 成本 '+p.value[0];}},TIP),
+ xAxis:Object.assign({type:'value',name:'实施成本 →',nameLocation:'middle',nameGap:28,min:0.5,max:4.8,nameTextStyle:{color:'#64748b',fontFamily:FONT}},AXIS),
+ yAxis:Object.assign({type:'value',name:'影响 →',nameGap:14,min:1,max:5.5,nameTextStyle:{color:'#64748b',fontFamily:FONT}},AXIS),
+ series:[seriesP('P1'),seriesP('P2')]}]);
+/* scatter hover 显示建议摘要：用 extra remark via markPoint 太重，改为 tooltip 全名 */
+charts.forEach(function(c){c[0].setOption(c[1]);});
+window.addEventListener('resize',function(){charts.forEach(function(c){c[0].resize();});});
+
+/* ================= MERMAID GANTT ================= */
+if(window.mermaid){
+  mermaid.initialize({startOnLoad:false,theme:'base',securityLevel:'loose',
+    themeVariables:{darkMode:true,background:'#10161f',primaryColor:'#1c2536',primaryTextColor:'#e8eef6',
+      primaryBorderColor:'#8b98a9',lineColor:'#5b6b81',secondaryColor:'#141c27',tertiaryColor:'#10161f',
+      gridLineColor:'#1e2733',taskBkgColor:'#223046',taskTextColor:'#e8eef6',activeTaskBkgColor:'#10a37f',
+      activeTaskBorderColor:'#10a37f',doneTaskBkgColor:'#141c27',doneTaskTextColor:'#93a1b3',
+      critBkgColor:'#f5a524',critTextColor:'#0a0e14',todayLineColor:'#f0756a',fontFamily:'MiSans, PingFang SC, sans-serif',fontSize:'12px'}});
+  var ganttDef='gantt\n  title P1 落地路线 · 2026-10-13 起（依赖排序）\n  dateFormat YYYY-MM-DD\n  axisFormat %m-%d\n'+
+   '  section 调研前置\n  agent-native 双路线调研        :crit, a1, 2026-10-13, 3d\n'+
+   '  section 路由与预算\n  task→tier 映射                :a2, 2026-10-13, 2d\n  eval_history 基线回写          :a3, after a2, 2d\n'+
+   '  section 循环与归因\n  无进展循环判据                :a4, 2026-10-13, 3d\n  失败传播标记                   :a5, after a4, 4d\n'+
+   '  section 探针与门禁\n  群体规模探针                  :a6, 2026-10-13, 3d\n  gate evidence 字段             :a7, after a6, 2d\n  动作级约束闸                   :a8, after a7, 5d\n'+
+   '  section 评审\n  非作者第二评审                :a9, after a2, 3d\n';
+  var el=document.createElement('div');el.className='mermaid';el.id='gantt-el';
+  el.style.background='#10161f';el.textContent=ganttDef;
+  document.getElementById('chart-gantt-m').appendChild(el);
+  mermaid.run({querySelector:'#gantt-el'}).catch(function(e){console.error('mermaid',e);});
+}
+
+/* ================= NAV: scroll-spy + progress ================= */
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.navlink'));
+  var secs=links.map(function(a){return document.querySelector(a.getAttribute('href'));});
+  var bar=document.getElementById('progress');
+  function onScroll(){
+    var st=window.scrollY||document.documentElement.scrollTop,h=document.documentElement.scrollHeight-window.innerHeight;
+    bar.style.width=(h>0?(st/h*100):0)+'%';
+    var cur=0;secs.forEach(function(s,i){if(s&&s.getBoundingClientRect().top<=140)cur=i;});
+    links.forEach(function(a,i){a.classList.toggle('active',i===cur);});
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});onScroll();
+})();
+</script>
+</body>
+</html>

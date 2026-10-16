@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>swarm 情报雷达 · 多智能体编排情报出版物</title>
+<link href="https://hectoryuan.github.io/swarm-radar-site/" rel="alternate"/>
+<link href="https://hectoryuan.github.io/swarm-radar-site/feed.xml" rel="self"/>
+<id>urn:swarm-radar:daily</id>
+<updated>2026-10-12T00:00:00Z</updated>
+<entry>
+<title>swarm 情报雷达 · 2026.10.12 · 多智能体编排情报出版物</title>
+<link href="https://hectoryuan.github.io/swarm-radar-site/archive/20261012.html" rel="alternate"/>
+<id>urn:swarm-radar:20261012</id>
+<updated>2026-10-12T00:00:00Z</updated>
+<summary type="html">swarm 情报雷达 · 2026.10.12 · 多智能体编排情报出版物</summary>
+</entry>
+</feed>
